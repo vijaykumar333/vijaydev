@@ -3,7 +3,7 @@
  <distributionManagement>
   <repository>
    <id>my-repo-id</id>
-   <url>https://my-nexus-repo-address.com</url>
+   <url>https://http://3.108.63.95:8081/repository/maven/</url>
   </repository>
  </distributionManagement>
  <build>
