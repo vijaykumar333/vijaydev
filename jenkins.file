@@ -1,5 +1,5 @@
 def
-	giturl = 'https://github.com/vennavenkatesh/devops-sample.git'
+	giturl = 'https://github.com/vijaykumar333/vijaydev.gitt'
 	branch_name = 'master'
 
 pipeline {
