@@ -1,0 +1,459 @@
+
+* Install `kubeadm`: https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/
+
+* Reference-1: https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/
+
+* Reference-2: https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm/
+
+**Create three ubuntu instances on AWS**:
+
+	1 for master & 2 will act as worker nodes for master.
+	
+	give the hostnames by running these commands
+	
+	hostname k8s-master
+	echo k8s-master > /etc/hostname
+	
+	hostname k8s-node-1
+	echo k8s-node-1 > /etc/hostname
+	
+	hostname k8s-node-2
+	echo k8s-node-2 > /etc/hostname
+	
+> **Note:**: For your practice, to avoid any other user permissions issues, run all the commands from root user.
+
+**Installation**:
+
+Install Docker, kubeadm, Kubelet, Kubectl and Kubernetes-cni.
+
+    echo "Installtion starts"
+    
+    sudo apt-get update -y
+
+    sudo apt-get install apt-transport-https -y
+
+    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add
+
+    echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list
+
+    apt-get update
+
+    apt-get install -y docker.io
+
+    systemctl enable docker.service
+
+    apt-get install -y kubelet kubeadm kubectl
+
+    docker version
+
+    kubeadm version
+
+    kubectl version
+    
+    echo "Installtion completed"
+
+**On master**:
+
+Command-1: kubeadm config images pull
+
+	docker images -a (below list of images will be downloaded)
+	
+	k8s.gcr.io/kube-apiserver 
+	k8s.gcr.io/kube-controller-manager
+	k8s.gcr.io/kube-scheduler
+	k8s.gcr.io/kube-proxy
+	k8s.gcr.io/pause
+	k8s.gcr.io/coredns/coredns
+	k8s.gcr.io/etcd
+	
+Command-2: kubeadm init
+
+    Your Kubernetes master has initialized successfully!
+
+    To start using your cluster, you need to run the following as a regular user:
+
+      mkdir -p $HOME/.kube
+      sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+      sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+    You should now deploy a pod network to the cluster.
+    Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
+      https://kubernetes.io/docs/concepts/cluster-administration/addons/
+
+    You can now join any number of machines by running the following on each node
+    as root:
+
+      kubeadm join 172.31.37.121:6443 --token vlkd0z.oiti09x4xdmkedp1 --discovery-token-ca-cert-hash sha256:cdb6b9540e19ede2d4b77f02022a02a635b6b66bd200732b5a8b82216775381a
+      
+> **Observe:** Run the below command to see how many containers created after kubeadm init
+
+	docker ps -a
+
+	CONTAINER ID   IMAGE                    
+	f70a0952624c   k8s.gcr.io/kube-proxy
+	3274dc7f13c8   k8s.gcr.io/kube-scheduler
+	7f16766645ef   k8s.gcr.io/etcd
+	4f8d20fe1226   k8s.gcr.io/kube-controller-manager
+	ab1165b11878   k8s.gcr.io/kube-apiserver
+	c06eec36b210   k8s.gcr.io/pause:3.4.1
+	7f50b5186e2c   k8s.gcr.io/pause:3.4.1
+	a50e06c1ed46   k8s.gcr.io/pause:3.4.1
+	cf57c97a955a   k8s.gcr.io/pause:3.4.1
+	bb79b1eeb925   k8s.gcr.io/pause:3.4.1
+	
+	docker ps -a (to have a clear view, removed three columns STATUS, PORT, CREATED)
+	
+	CONTAINER ID   IMAGE                               COMMAND                  NAMES
+	f70a0952624c   k8s.gcr.io/kube-proxy               "/usr/local/bin/kube…"   k8s_kube-proxy_kube-proxy-bq7z5_kube-system_8c7c44b5-4688-43a4-a104-f69c3e207cf0_0
+	3274dc7f13c8   k8s.gcr.io/kube-scheduler           "kube-scheduler --au…"   k8s_kube-scheduler_kube-scheduler-k8s-master_kube-system_8cac3a7afcf13bd55a77b1f25630be68_0
+	7f16766645ef   k8s.gcr.io/etcd                     "etcd --advertise-cl…"   k8s_etcd_etcd-k8s-master_kube-system_034e0a2a367170198c5064aaed69261f_0
+	4f8d20fe1226   k8s.gcr.io/kube-controller-manager  "kube-controller-man…"   k8s_kube-controller-manager_kube-controller-manager-k8s-master_kube-system_6c116ee211b40e41e887ede0dfd22f1a_0
+	ab1165b11878   k8s.gcr.io/kube-apiserver           "kube-apiserver --ad…"   k8s_kube-apiserver_kube-apiserver-k8s-master_kube-system_bcaa70260b6047e9bd9eb44d31dce557_0
+	c06eec36b210   k8s.gcr.io/pause:3.4.1              "/pause"                 k8s_POD_kube-proxy-bq7z5_kube-system_8c7c44b5-4688-43a4-a104-f69c3e207cf0_0
+	a50e06c1ed46   k8s.gcr.io/pause:3.4.1              "/pause"                 k8s_POD_kube-scheduler-k8s-master_kube-system_8cac3a7afcf13bd55a77b1f25630be68_0
+	7f50b5186e2c   k8s.gcr.io/pause:3.4.1              "/pause"                 k8s_POD_etcd-k8s-master_kube-system_034e0a2a367170198c5064aaed69261f_0
+	cf57c97a955a   k8s.gcr.io/pause:3.4.1              "/pause"                 k8s_POD_kube-controller-manager-k8s-master_kube-system_6c116ee211b40e41e887ede0dfd22f1a_0
+	bb79b1eeb925   k8s.gcr.io/pause:3.4.1              "/pause"                 k8s_POD_kube-apiserver-k8s-master_kube-system_bcaa70260b6047e9bd9eb44d31dce557_0
+
+
+
+
+	root@ip-172-31-37-121:~# mkdir -p $HOME/.kube
+	root@ip-172-31-37-121:~# sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+	root@ip-172-31-37-121:~# sudo chown $(id -u):$(id -g) $HOME/.kube/config
+	root@ip-172-31-37-121:~# kubectl get node
+	NAME               STATUS     ROLES     AGE       VERSION
+	ip-172-31-37-121   NotReady   master    1m        v1.11.2
+	root@ip-172-31-37-121:~# kubectl get pods --all-namespaces
+	NAMESPACE     NAME                                       READY     STATUS    RESTARTS   AGE
+	kube-system   coredns-78fcdf6894-fctkz                   0/1       Pending   0          1m
+	kube-system   coredns-78fcdf6894-wzff6                   0/1       Pending   0          1m
+	kube-system   etcd-ip-172-31-37-121                      1/1       Running   0          1m
+	kube-system   kube-apiserver-ip-172-31-37-121            1/1       Running   0          1m
+	kube-system   kube-controller-manager-ip-172-31-37-121   1/1       Running   0          57s
+	kube-system   kube-proxy-92lwh                           1/1       Running   0          1m
+	kube-system   kube-scheduler-ip-172-31-37-121            1/1       Running   0          1m
+
+          
+> **Note:** Here, if you noticied, coredns pods are still in 'Pending' state. If you describe the pod, you might see the main reason for this.  0/1 nodes are available: 1 node(s) had taint {node.kubernetes.io/not-ready: } - this means, master node is not ready to communicate and uable to prepare the cluster. To fix this, we need to setup the network layers, so that master node will be available and ready (in the cluster). i.e, node is ready to communicate with other nodes.
+          
+          kubectl describe pod coredns-78fcdf6894-fctkz -n kube-system
+          
+          see the 'reason' under 'Events'
+		
+                Events:
+          Type     Reason            Age    From               Message
+          ----     ------            ----   ----               -------
+          Warning  FailedScheduling  2m41s  default-scheduler  0/1 nodes are available: 1 node(s) had taint {node.kubernetes.io/not-ready: }, that the pod didn't tolerate.
+          Warning  FailedScheduling  2m41s  default-scheduler  0/1 nodes are available: 1 node(s) had taint {node.kubernetes.io/not-ready: }, that the pod didn't tolerate.
+
+          root@ip-172-31-37-121:~# sysctl net.bridge.bridge-nf-call-iptables=1
+          net.bridge.bridge-nf-call-iptables = 1
+          root@ip-172-31-37-121:~# export kubever=$(kubectl version | base64 | tr -d '\n')
+          root@ip-172-31-37-121:~# kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$kubever"
+          serviceaccount/weave-net created
+          clusterrole.rbac.authorization.k8s.io/weave-net created
+          clusterrolebinding.rbac.authorization.k8s.io/weave-net created
+          role.rbac.authorization.k8s.io/weave-net created
+          rolebinding.rbac.authorization.k8s.io/weave-net created
+          daemonset.extensions/weave-net created
+          root@ip-172-31-37-121:~# kubectl get nodes
+          NAME               STATUS     ROLES     AGE       VERSION
+          ip-172-31-37-121   NotReady   master    2m        v1.11.2
+          root@ip-172-31-37-121:~# kubectl get nodes
+          NAME               STATUS    ROLES     AGE       VERSION
+          ip-172-31-37-121   Ready     master    2m        v1.11.2
+          
+          
+> **Note:** Now, master is available in cluster and ready to communicate with other nodes to join into this cluster. We can join other nodes into this cluster. When you run the command 'kubeadm init', in the command promt, you might noticied 'kubeadm join ....' command, copy this command and run on the other nodes(before this, install the required tools docker, kubeadm, kubectl etc on the node, use the same comamnds from the section 'Installation'. 
+          
+          
+          root@ip-172-31-37-121:~# kubectl get nodes
+          NAME               STATUS     ROLES     AGE       VERSION
+          ip-172-31-37-121   Ready      master    4m        v1.11.2
+          ip-172-31-44-113   NotReady   <none>    6s        v1.11.2
+          root@ip-172-31-37-121:~# kubectl get nodes
+          NAME               STATUS     ROLES     AGE       VERSION
+          ip-172-31-32-169   NotReady   <none>    3s        v1.11.2
+          ip-172-31-37-121   Ready      master    5m        v1.11.2
+          ip-172-31-44-113   Ready      <none>    1m        v1.11.2
+          root@ip-172-31-37-121:~# kubectl get nodes
+          NAME               STATUS    ROLES     AGE       VERSION
+          ip-172-31-32-169   Ready     <none>    3m        v1.11.2
+          ip-172-31-37-121   Ready     master    9m        v1.11.2
+          ip-172-31-44-113   Ready     <none>    4m        v1.11.2
+
+	
+> **Observe:** Run the docker ps command to list the containers on master 
+
+	On master:
+
+	Command-1: docker images 
+	
+	k8s.gcr.io/kube-apiserver            v1.21.2    106ff58d4308   5 days ago     126MB
+	k8s.gcr.io/kube-controller-manager   v1.21.2    ae24db9aa2cc   5 days ago     120MB
+	k8s.gcr.io/kube-scheduler            v1.21.2    f917b8c8f55b   5 days ago     50.6MB
+	k8s.gcr.io/kube-proxy                v1.21.2    a6ebd1c1ad98   5 days ago     131MB
+	weaveworks/weave-npc                 2.8.1      7f92d556d4ff   4 months ago   39.3MB
+	weaveworks/weave-kube                2.8.1      df29c0a4002c   4 months ago   89MB
+	k8s.gcr.io/pause                     3.4.1      0f8457a4c2ec   5 months ago   683kB
+	k8s.gcr.io/coredns/coredns           v1.8.0     296a6d5035e2   8 months ago   42.5MB
+	k8s.gcr.io/etcd                      3.4.13-0   0369cf4303ff   9 months ago   253MB
+
+	Command-2: docker ps (to have a clear view, removed three columns STATUS, PORT, CREATED)
+	
+	CONTAINER ID   IMAGE                                          COMMAND                  NAMES
+	e206329f7fd8   weaveworks/weave-kube                          "/home/weave/launch.…"   k8s_weave_weave-net-vzp25_kube-system_0242054f-b647-4c1a-add3-562ceb6c0284_1
+	4e15a3d8dfc7   weaveworks/weave-npc                           "/usr/bin/launch.sh"     k8s_weave-npc_weave-net-vzp25_kube-system_0242054f-b647-4c1a-add3-562ceb6c0284_0
+	209adb78245c   k8s.gcr.io/pause:3.4.1                         "/pause"                 k8s_POD_weave-net-vzp25_kube-system_0242054f-b647-4c1a-add3-562ceb6c0284_0
+	f70a0952624c   k8s.gcr.io/kube-proxy                          "/usr/local/bin/kube…"   k8s_kube-proxy_kube-proxy-bq7z5_kube-system_8c7c44b5-4688-43a4-a104-f69c3e207cf0_0
+	c06eec36b210   k8s.gcr.io/pause:3.4.1                         "/pause"                 k8s_POD_kube-proxy-bq7z5_kube-system_8c7c44b5-4688-43a4-a104-f69c3e207cf0_0
+	3274dc7f13c8   k8s.gcr.io/kube-scheduler                      "kube-scheduler --au…"   k8s_kube-scheduler_kube-scheduler-k8s-master_kube-system_8cac3a7afcf13bd55a77b1f25630be68_0
+	7f16766645ef   k8s.gcr.io/etcd                                "etcd --advertise-cl…"   k8s_etcd_etcd-k8s-master_kube-system_034e0a2a367170198c5064aaed69261f_0
+	4f8d20fe1226   k8s.gcr.io/kube-controller-manager             "kube-controller-man…"   k8s_kube-controller-manager_kube-controller-manager-k8s-master_kube-system_6c116ee211b40e41e887ede0dfd22f1a_0
+	ab1165b11878   k8s.gcr.io/kube-apiserver                      "kube-apiserver --ad…"   k8s_kube-apiserver_kube-apiserver-k8s-master_kube-system_bcaa70260b6047e9bd9eb44d31dce557_0
+	7f50b5186e2c   k8s.gcr.io/pause:3.4.1                         "/pause"                 k8s_POD_etcd-k8s-master_kube-system_034e0a2a367170198c5064aaed69261f_0
+	a50e06c1ed46   k8s.gcr.io/pause:3.4.1                         "/pause"                 k8s_POD_kube-scheduler-k8s-master_kube-system_8cac3a7afcf13bd55a77b1f25630be68_0
+	cf57c97a955a   k8s.gcr.io/pause:3.4.1                         "/pause"                 k8s_POD_kube-controller-manager-k8s-master_kube-system_6c116ee211b40e41e887ede0dfd22f1a_0
+	bb79b1eeb925   k8s.gcr.io/pause:3.4.1                         "/pause"                 k8s_POD_kube-apiserver-k8s-master_kube-system_bcaa70260b6047e9bd9eb44d31dce557_0
+
+	On Node:
+
+	docker images
+	
+	REPOSITORY                   TAG       IMAGE ID       CREATED        SIZE
+	k8s.gcr.io/kube-proxy        v1.21.2   a6ebd1c1ad98   5 days ago     131MB
+	weaveworks/weave-npc         2.8.1     7f92d556d4ff   4 months ago   39.3MB
+	weaveworks/weave-kube        2.8.1     df29c0a4002c   4 months ago   89MB
+	k8s.gcr.io/pause             3.4.1     0f8457a4c2ec   5 months ago   683kB
+	k8s.gcr.io/coredns/coredns   v1.8.0    296a6d5035e2   8 months ago   42.5MB
+
+	docker ps 
+	
+	CONTAINER ID   IMAGE                        COMMAND                  NAMES
+	3b2ff04581ce   k8s.gcr.io/coredns/coredns   "/coredns -conf /etc…"   k8s_coredns_coredns-558bd4d5db-mltj5_kube-system_0832e254-c481-47bf-829f-3c0f299ad9fb_0
+	83b86a629803   k8s.gcr.io/coredns/coredns   "/coredns -conf /etc…"   k8s_coredns_coredns-558bd4d5db-5fzj7_kube-system_b1d1ca68-076a-4bf3-887a-a744be5ff991_0
+	67b2e56b43b9   k8s.gcr.io/pause:3.4.1       "/pause"                 k8s_POD_coredns-558bd4d5db-5fzj7_kube-system_b1d1ca68-076a-4bf3-887a-a744be5ff991_0
+	d97e8ea7afaf   k8s.gcr.io/pause:3.4.1       "/pause"                 k8s_POD_coredns-558bd4d5db-mltj5_kube-system_0832e254-c481-47bf-829f-3c0f299ad9fb_0
+	c28e207f74cd   weaveworks/weave-kube:2.8.1  "/home/weave/launch.…"   k8s_weave_weave-net-2r24q_kube-system_7348189d-f0f7-4960-94fb-bf35b930afa8_1
+	0e8f6cdcc9f3   weaveworks/weave-npc         "/usr/bin/launch.sh"     k8s_weave-npc_weave-net-2r24q_kube-system_7348189d-f0f7-4960-94fb-bf35b930afa8_0
+	d94e126b7e62   k8s.gcr.io/pause:3.4.1       "/pause"                 k8s_POD_weave-net-2r24q_kube-system_7348189d-f0f7-4960-94fb-bf35b930afa8_0
+	12f3288ab683   k8s.gcr.io/kube-proxy        "/usr/local/bin/kube…"   k8s_kube-proxy_kube-proxy-swflz_kube-system_31b3755d-7e49-4508-8d8e-70acfebf52cc_0
+	cb39765e59dc   k8s.gcr.io/pause:3.4.1       "/pause"                 k8s_POD_kube-proxy-swflz_kube-system_31b3755d-7e49-4508-8d8e-70acfebf52cc_0
+
+---------
+	
+	root@ip-172-31-37-121:~# kubectl create deployment nginx --image=nginx
+	deployment.apps/nginx created
+	root@ip-172-31-37-121:~# kubectl get deployments
+	NAME      DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+	nginx     1         1         1            1           8s
+
+> **Observe**: Run docker ps command on manster and node(s), there is one container creating for each new container.
+
+	root@k8s-node-1:~# docker ps
+	CONTAINER ID   IMAGE                        COMMAND                  CREATED             STATUS             PORTS     NAMES
+	c80b1504fe7c   nginx                        "/docker-entrypoint.…"   46 seconds ago      Up 44 seconds                k8s_nginx_nginx-6799fc88d8-5lcsh_default_6709f5ed-d399-4533-91c1-169aebf549ba_0
+	f7234c6b025e   k8s.gcr.io/pause:3.4.1       "/pause"                 49 seconds ago      Up 49 seconds                k8s_POD_nginx-6799fc88d8-5lcsh_default_6709f5ed-d399-4
+
+
+	root@k8s-master:~# kubectl describe deployment nginx
+	Name:                   nginx
+	Namespace:              default
+	CreationTimestamp:      Mon, 21 Jun 2021 16:34:20 +0000
+	Labels:                 app=nginx
+	Annotations:            deployment.kubernetes.io/revision: 1
+	Selector:               app=nginx
+	Replicas:               1 desired | 1 updated | 1 total | 1 available | 0 unavailable
+	StrategyType:           RollingUpdate
+	MinReadySeconds:        0
+	RollingUpdateStrategy:  25% max unavailable, 25% max surge
+	Pod Template:
+	  Labels:  app=nginx
+	  Containers:
+	   nginx:
+	    Image:        nginx
+	    Port:         <none>
+	    Host Port:    <none>
+	    Environment:  <none>
+	    Mounts:       <none>
+	  Volumes:        <none>
+	Conditions:
+	  Type           Status  Reason
+	  ----           ------  ------
+	  Available      True    MinimumReplicasAvailable
+	  Progressing    True    NewReplicaSetAvailable
+	OldReplicaSets:  <none>
+	NewReplicaSet:   nginx-6799fc88d8 (1/1 replicas created)
+	Events:
+	  Type    Reason             Age    From                   Message
+	  ----    ------             ----   ----                   -------
+	  Normal  ScalingReplicaSet  3m42s  deployment-controller  Scaled up replica set nginx-6799fc88d8 to 1
+	root@k8s-master:~#
+
+          root@ip-172-31-37-121:~# kubectl create service nodeport nginx --tcp=80:80
+          service/nginx created
+          root@ip-172-31-37-121:~# kubectl get deployments
+          NAME      DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+          nginx     1         1         1            1           1m
+          root@ip-172-31-37-121:~# kubectl get svc
+          NAME         TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)        AGE
+          kubernetes   ClusterIP   10.96.0.1     <none>        443/TCP        11m
+          nginx        NodePort    10.99.12.53   <none>        80:31987/TCP   1m
+          root@ip-172-31-37-121:~# curl http://18.188.5.186/
+          curl: (7) Failed to connect to 18.188.5.186 port 80: Connection refused
+          root@ip-172-31-37-121:~# curl http://18.188.5.186:80
+          curl: (7) Failed to connect to 18.188.5.186 port 80: Connection refused
+          root@ip-172-31-37-121:~# curl http://18.188.5.186:31987
+          <!DOCTYPE html>
+          <html>
+          <head>
+          <title>Welcome to nginx!</title>
+          <style>
+              body {
+                  width: 35em;
+                  margin: 0 auto;
+                  font-family: Tahoma, Verdana, Arial, sans-serif;
+              }
+          </style>
+          </head>
+          <body>
+          <h1>Welcome to nginx!</h1>
+          <p>If you see this page, the nginx web server is successfully installed and
+          working. Further configuration is required.</p>
+
+          <p>For online documentation and support please refer to
+          <a href="http://nginx.org/">nginx.org</a>.<br/>
+          Commercial support is available at
+          <a href="http://nginx.com/">nginx.com</a>.</p>
+
+          <p><em>Thank you for using nginx.</em></p>
+          </body>
+          </html>
+          root@ip-172-31-37-121:~# history
+              1  exit
+              2  curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add
+              3  vi /etc/apt/sources.list.d/kubernetes.list
+              4  cat /etc/apt/sources.list.d/kubernetes.list
+              5  apt-get update
+              6  apt-get install -y docker.io
+              7  apt-get install -y kubelet kubeadm kubectl kubernetes-cni
+              8  docker version
+              9  kubeadm init
+             10  mkdir -p $HOME/.kube
+             11  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+             12  sudo chown $(id -u):$(id -g) $HOME/.kube/config
+             13  kubectl get node
+             14  kubectl get pods --all-namespaces
+             15  sysctl net.bridge.bridge-nf-call-iptables=1
+             16  export kubever=$(kubectl version | base64 | tr -d '\n')
+             17  kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$kubever"
+             18  kubectl get nodes
+             19  kubectl create deployment nginx --image=nginx
+             20  kubectl get deployments
+             21  kubectl describe deployment nginx
+             22  kubectl create service nodeport nginx --tcp=80:80
+             23  kubectl get deployments
+             24  kubectl get svc
+             25  curl http://18.188.5.186/
+             26  curl http://18.188.5.186:80
+             27  curl http://18.188.5.186:31987
+             28  history
+             29  docker images
+             30  docker ps
+          root@ip-172-31-37-121:~#
+
+
+---
+
+
+
+kubectl create deployment nginx --image=nginx
+
+kubectl create service nodeport nginx --tcp=80:80
+
+kubectl get deployments
+
+kubectl get svc
+
+curl http://18.188.5.186:31987
+
+![image](https://user-images.githubusercontent.com/24622526/44305576-41c39e00-a36a-11e8-96e4-04ca84e153a4.png)
+
+http://18.188.5.186:31987
+
+![image](https://user-images.githubusercontent.com/24622526/44305579-5bfd7c00-a36a-11e8-9cb7-22b0a19a88ca.png)
+
+Launch this URL in any browser http://18.188.5.186:31987 (make sure this port 31987 is open)
+
+![image](https://user-images.githubusercontent.com/24622526/110585005-712c9700-8170-11eb-9419-376761ae945b.png)
+
+
+### Delete the deployment
+
+    kubectl delete deployment nginx
+
+
+    root@ip-172-31-37-121:~# kubectl delete deployment nginx
+
+    deployment.extensions "nginx" deleted
+
+    root@ip-172-31-37-121:~#
+
+---
+
+> **Note:** By default, your cluster will not schedule pods on the master for security reasons. If you want to be able to schedule pods on the master, e.g. for a single-machine Kubernetes cluster for development, run:
+    kubectl taint nodes --all node-role.kubernetes.io/master-
+
+---
+
+	find / -name "kube*"
+
+	/usr/bin/kubelet
+	/usr/bin/kubectl
+	/usr/bin/kubeadm
+	/etc/kubernetes
+	/var/lib/kubelet
+
+
+	ll /etc/kubernetes
+
+	ll /var/lib
+
+	ll /var/lib/kubelet
+
+	ll /var/lib/kubelet/pods
+
+	ll /var/lib/kubelet/pods/[podname]
+
+	drwxr-x--- 4 root root 4096 Nov 19 02:45 containers/
+	-rw-r--r-- 1 root root  269 Nov 19 02:45 etc-hosts
+	drwxr-x--- 3 root root 4096 Nov 19 02:45 plugins/
+	drwxr-x--- 3 root root 4096 Nov 19 02:45 volumes/
+
+---
+
+* https://www.digitalocean.com/community/tutorials/how-to-create-a-kubernetes-1-10-cluster-using-kubeadm-on-ubuntu-16-04
+
+* `kubectl describe pod <podName> | grep IP | awk '{print $2}'`
+
+
+---
+
+	kubeadm join 172.31.5.56:6443 --token n1n0bx.bvrnur4x81pj02dy --discovery-token-ca-cert-hash sha256:e2ff62d02d77c2ddf1eb21e22e62a3c956bc2f617d983526c83631ac02fe31ef
+
+
+	kubectl run hello-web --image=gcr.io/${PROJECT_ID}/hello-app:v1 --port 8080
+
+	kubectl run devopswebapp --image=docker pull venkatasykam/devopswebapp:latest --port 808
+
+	kubectl expose deployment nginx-deployment --type=LoadBalancer --port 80 --target-port 8080
+
+	https://kubernetes.io/docs/tutorials/kubernetes-basics/expose/expose-interactive/
+
+
+
+	kubectl exec my-nginx-59497d7745-rcx2p -- printenv | grep SERVICE
+
+
+	kubectl expose deployment my-nginx --type=LoadBalancer --port 80
